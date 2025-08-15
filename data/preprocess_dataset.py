@@ -1,55 +1,89 @@
-"""
-Preprocessing script for ECG image dataset.
-Loads raw ECG images, applies preprocessing (resize, normalization), and saves processed data for model training/testing.
-"""
+# data/preprocess_dataset.py
+import argparse, os, random, math, csv, json
+from pathlib import Path
+from PIL import Image, ImageDraw
+from sklearn.model_selection import StratifiedShuffleSplit
 
-import os
-import numpy as np
-from PIL import Image
-import argparse
+def _find_images(root):
+    exts = {".png", ".jpg", ".jpeg"}
+    items = []
+    for cls_dir in sorted(Path(root).glob("*")):
+        if cls_dir.is_dir():
+            for p in cls_dir.rglob("*"):
+                if p.suffix.lower() in exts:
+                    items.append((str(p), cls_dir.name))
+    return items
 
-RAW_DIR = os.path.join(os.path.dirname(__file__), 'raw')
-PROCESSED_DIR = os.path.join(os.path.dirname(__file__), 'processed')
-IMG_SIZE = (224, 224)  # Standard size for CNNs
+def _write_manifest(rows, out_csv):
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    with out_csv.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=rows[0].keys())
+        w.writeheader(); w.writerows(rows)
 
-def preprocess_image(img_path, img_size=IMG_SIZE):
-	"""Load an image, resize, and normalize to [0, 1]."""
-	img = Image.open(img_path).convert('RGB')
-	img = img.resize(img_size)
-	img_array = np.asarray(img, dtype=np.float32) / 255.0
-	return img_array
+def _make_synthetic(root, classes=("normal","sveb","veb"), n_per_cls=200, w=256, h=64):
+    root = Path(root); root.mkdir(parents=True, exist_ok=True)
+    for c in classes:
+        (root/c).mkdir(exist_ok=True)
+        for i in range(n_per_cls):
+            img = Image.new("L", (w,h), 255)
+            d = ImageDraw.Draw(img)
+            # draw sinusoid with class-specific frequency/perturbation
+            for x in range(w):
+                freq = {"normal":3, "sveb":5, "veb":2}[c]
+                y = int(h/2 + (h/3)*math.sin(2*math.pi*(x/w)*freq))
+                d.point((x,y), fill=0)
+            img.save(root/c/f"{c}_{i:04d}.png")
 
-def process_dataset(raw_dir=RAW_DIR, processed_dir=PROCESSED_DIR, img_size=IMG_SIZE):
-	"""Process all images in raw_dir and save as .npy arrays in processed_dir."""
-	if not os.path.exists(processed_dir):
-		os.makedirs(processed_dir)
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--input", required=True)
+    ap.add_argument("--output", required=True)
+    ap.add_argument("--csv", default=None, help="optional CSV with filepath,label,...")
+    ap.add_argument("--val-size", type=float, default=0.1)
+    ap.add_argument("--test-size", type=float, default=0.1)
+    ap.add_argument("--make-synthetic", action="store_true")
+    args = ap.parse_args()
 
-	labels = []
-	images = []
+    raw = Path(args.input)
+    if args.make-synthetic:
+        _make_synthetic(raw)
 
-	# Assume subfolders in raw_dir are class labels
-	for label in os.listdir(raw_dir):
-		label_path = os.path.join(raw_dir, label)
-		if not os.path.isdir(label_path):
-			continue
-		for fname in os.listdir(label_path):
-			if fname.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
-				img_path = os.path.join(label_path, fname)
-				img_array = preprocess_image(img_path, img_size)
-				images.append(img_array)
-				labels.append(label)
+    if args.csv:
+        rows = [r for r in csv.DictReader(open(args.csv))]
+        items = [(r["filepath"], r["label"]) for r in rows]
+        # keep metadata columns if any
+        meta_cols = [c for c in rows[0].keys() if c not in ("filepath","label")]
+    else:
+        items = _find_images(raw)
+        meta_cols = []
 
-	images = np.stack(images)
-	labels = np.array(labels)
+    X = [p for p,_ in items]
+    y = [c for _,c in items]
 
-	np.save(os.path.join(processed_dir, 'images.npy'), images)
-	np.save(os.path.join(processed_dir, 'labels.npy'), labels)
-	print(f"Processed {len(images)} images. Saved to {processed_dir}.")
+    # stratified split: train/val/test
+    sss1 = StratifiedShuffleSplit(n_splits=1, test_size=args.test_size, random_state=42)
+    train_idx, test_idx = next(sss1.split(X,y))
+    X_train, y_train = [X[i] for i in train_idx], [y[i] for i in train_idx]
+    X_test, y_test = [X[i] for i in test_idx], [y[i] for i in test_idx]
+
+    val_ratio = args.val_size/(1-args.test_size)
+    sss2 = StratifiedShuffleSplit(n_splits=1, test_size=val_ratio, random_state=42)
+    tr_idx, val_idx = next(sss2.split(X_train,y_train))
+
+    def rows_from(idx_list):
+        rows = []
+        for i in idx_list:
+            row = {"filepath":X[i], "label":y[i]}
+            # attach extra metadata if csv was given
+            # (simple example: store everything as JSON string)
+            rows.append(row)
+        return rows
+
+    out = Path(args.output)
+    _write_manifest(rows_from(tr_idx), out/"train.csv")
+    _write_manifest(rows_from(val_idx), out/"val.csv")
+    _write_manifest(rows_from(test_idx), out/"test.csv")
+    print("Wrote manifests to", out)
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(description="Preprocess ECG image dataset.")
-	parser.add_argument('--raw_dir', type=str, default=RAW_DIR, help='Directory with raw ECG images (by class)')
-	parser.add_argument('--processed_dir', type=str, default=PROCESSED_DIR, help='Directory to save processed data')
-	parser.add_argument('--img_size', type=int, nargs=2, default=IMG_SIZE, help='Image size (H W)')
-	args = parser.parse_args()
-	process_dataset(args.raw_dir, args.processed_dir, tuple(args.img_size))
+    main()

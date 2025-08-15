@@ -1,0 +1,24 @@
+name: ecg-adv-robustness
+channels: [pytorch, nvidia, conda-forge, defaults]
+dependencies:
+  - python=3.10
+  - pytorch::pytorch
+  - pytorch::torchvision
+  - pytorch::torchaudio
+  - cudatoolkit>=11.8,<12  # remove if CPU-only
+  - numpy
+  - scipy
+  - scikit-learn
+  - pillow
+  - matplotlib
+  - pandas
+  - pyyaml
+  - tqdm
+  - rich
+  - pip
+  - pip:
+      - opencv-python
+      - einops
+      - hydra-core
+      - omegaconf
+      - flwr  # for federated learning

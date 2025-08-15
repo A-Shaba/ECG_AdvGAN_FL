@@ -30,7 +30,7 @@ ecg-adv-robustness/
 │   ├── preprocess_dataset.py   # funzioni di preprocessing e split
 │
 ├── models/
-│   ├── ecg_clasifier_cnn.py    # modello baseline (CNN/ResNet)
+│   ├── ecg_classifier_cnn.py    # modello baseline (CNN/ResNet)
 │   ├── utils.py                # utilità per i modelli
 │
 ├── training/
@@ -101,7 +101,7 @@ Esempi utilizzabili:
 - [PTB-XL](https://physionet.org/content/ptb-xl/1.0.1/)
 - MIT-BIH arrhythmia dataset (convertito in immagini)
 
-Il preprocessing (`prepare_dataset.py`) include:
+Il preprocessing (`prepreprocess_dataset.py`) include:
 - Ridimensionamento e normalizzazione delle immagini
 - Conversione a tensori PyTorch
 - Creazione di split train/val/test
@@ -110,7 +110,7 @@ Il preprocessing (`prepare_dataset.py`) include:
 
 ## 🧠 Modelli
 
-### `ecg_clasifier_cnn.py`
+### `ecg_classifier_cnn.py`
 - Implementazione di una CNN 2D semplice o una ResNet adattata per immagini ECG.
 - Configurabile tramite file di configurazione in `experiments/configs/`.
 
@@ -175,7 +175,7 @@ python training/train_baseline.py --config experiments/configs/baseline.yaml
 
 ### 4. Lanciare un attacco FGSM
 ```bash
-python attacks/gradient_based/fgsm.py --model models/cnn_baseline.py --data data/processed
+python attacks/gradient_based/fgsm.py --model models/ecg_classifier_cnn.py --data data/processed
 ```
 
 ### 5. Addestrare AdvGAN

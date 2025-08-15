@@ -1,0 +1,16 @@
+data:
+  resize: [64,256]
+  train_csv: data/processed/train.csv
+model:
+  name: small_cnn
+  ckpt: outputs/baseline/baseline_best.pt
+attack:
+  eps: 0.03
+  lambda_adv: 1.0
+train:
+  bs: 32
+  epochs: 3
+  g_lr: 1e-4
+  d_lr: 1e-4
+  out_g: outputs/advgan/G.pt
+  out_d: outputs/advgan/D.pt

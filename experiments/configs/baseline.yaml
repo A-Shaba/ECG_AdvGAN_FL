@@ -1,0 +1,23 @@
+seed: 42
+data:
+  resize: [64, 256]     # (H,W)
+  train_csv: data/processed/train.csv
+  val_csv:   data/processed/val.csv
+  test_csv:  data/processed/test.csv
+model:
+  name: small_cnn
+train:
+  device: cuda              # 'cuda' if you have GPU, else 'cpu'
+  bs: 64
+  lr: 1e-3
+  epochs: 5
+  out_dir: outputs/baseline
+attack:
+    type: fgsm               # options: none, fgsm, pgd, advgan
+    fgsm_eps: 0.03
+    pgd_eps: 0.03
+    pgd_alpha: 0.005
+    pgd_steps: 40
+    advgan:
+      model_ckpt: outputs/advgan/advgan_generator.pt
+      eps: 0.03
