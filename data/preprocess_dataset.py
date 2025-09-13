@@ -45,7 +45,7 @@ def main():
     args = ap.parse_args()
 
     raw = Path(args.input)
-    if args.make-synthetic:
+    if args.make_synthetic:
         _make_synthetic(raw)
 
     if args.csv:
@@ -79,7 +79,10 @@ def main():
             rows.append(row)
         return rows
 
+    
     out = Path(args.output)
+    
+            
     _write_manifest(rows_from(tr_idx), out/"train.csv")
     _write_manifest(rows_from(val_idx), out/"val.csv")
     _write_manifest(rows_from(test_idx), out/"test.csv")

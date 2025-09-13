@@ -24,7 +24,7 @@ class ECGImageDataset(Dataset):
             img = img.convert("RGB")
         if self.transform: img = self.transform(img)
         y = torch.tensor(self.class_to_idx[row.label]).long()
-        meta = None
+        meta = ''
         if self.meta_cols:
             meta = torch.tensor([row[c] for c in self.meta_cols], dtype=torch.float32)
         return {"image": img, "label": y, "meta": meta}

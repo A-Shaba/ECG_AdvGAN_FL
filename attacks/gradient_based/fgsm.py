@@ -1,10 +1,30 @@
 # attacks/gradient_based/fgsm.py
 import torch
+import torch.nn.functional as F
 
-def fgsm_attack(model, x, y, eps=0.03):
-    x = x.clone().detach().requires_grad_(True)
-    logits = model(x)
-    loss = torch.nn.functional.cross_entropy(logits, y)
+def fgsm_attack(model, x, y, eps=0.03, clip_min=-1.0, clip_max=1.0):
+    """
+    FGSM in normalized space. Assumes inputs are already normalized to [-1, 1].
+    Args:
+        model: PyTorch model (in eval() mode)
+        x: input batch (N,C,H,W), normalized
+        y: labels (N,)
+        eps: L_inf step size in normalized space
+        clip_min, clip_max: bounds in normalized space
+    Returns:
+        x_adv: adversarial examples (detached)
+    """
+    x_adv = x.detach().clone().requires_grad_(True)
+
+    # clear any stale grads on model parameters
+    model.zero_grad(set_to_none=True)
+
+    logits = model(x_adv)
+    loss = F.cross_entropy(logits, y)
     loss.backward()
-    x_adv = x + eps * x.grad.sign()
-    return torch.clamp(x_adv, -1, 1)  # because we normalized to mean=.5 std=.5
+
+    with torch.no_grad():
+        x_adv = x_adv + eps * x_adv.grad.sign()
+        x_adv.clamp_(clip_min, clip_max)
+
+    return x_adv.detach()
