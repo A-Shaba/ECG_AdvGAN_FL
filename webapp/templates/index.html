@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Orchestrator</h2>
+<p>Select a step from each category and press Run. Other buttons will be disabled during execution.</p>
+
+<form id="pipelineForm">
+  <div class="row g-3">
+    {% for category, steps in pipeline.items() %}
+    <div class="col-md-6 col-lg-3 d-flex align-items-end">
+      <div class="w-100">
+        <label class="form-label"><strong>{{ category }}</strong></label>
+        <div class="input-group">
+          <select class="form-select step-select" id="select-{{ category }}">
+            {% for s in steps %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+          <button type="button" class="btn btn-primary run-btn" data-category="{{ category }}">Run</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</form>
+
+<div id="loader" class="text-center my-3" style="display:none;">
+  <div class="spinner-border text-primary" role="status"></div>
+  <p class="mt-2">Running task… please wait</p>
+</div>
+
+<hr />
+
+<h5>Logs</h5>
+<pre id="logBox" class="log-box">No logs yet. Choose a step and press Run.</pre>
+
+<div class="d-flex justify-content-end mt-3 mb-5">
+<button id="resetBtn" class="btn btn-danger mt-3 end">Reset Project</button>
+</div>
+
+{% endblock %}

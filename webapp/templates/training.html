@@ -1,0 +1,19 @@
+<!-- webapp/templates/training.html -->
+{% extends "base.html" %}
+{% block content %}
+<h2>Training</h2>
+{% if logs.error %}
+  <div class="alert alert-warning">{{ logs.error }}</div>
+{% else %}
+  <h5>Training log (raw)</h5>
+  <pre class="log-box">{{ logs }}</pre>
+
+  <div class="row mt-3">
+    {% for p in plots %}
+    <div class="col-md-6">
+      <img src="{{ url_for('plots', filename=p) }}" class="img-fluid rounded shadow-sm mb-2">
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,19 +1,15 @@
 # training/train_baseline.py
-import argparse, yaml, os
+import argparse
+import yaml
 from pathlib import Path
-import torch, torch.nn as nn
+import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from data.dataset import ECGImageDataset
-from models.ecg_classifier_cnn import SmallECGCNN, resnet18_gray
-from utils.metrics import accuracy
+from models.ecg_classifier_cnn import make_model
 from utils.seed import seed_everything
 from tqdm import tqdm
-
-def make_model(name, num_classes):
-    if name == "small_cnn": return SmallECGCNN(1, num_classes)
-    if name == "resnet18":  return resnet18_gray(num_classes)
-    raise ValueError(name)
 
 def main():
     ap = argparse.ArgumentParser()
@@ -23,50 +19,69 @@ def main():
 
     seed_everything(cfg.get("seed", 42))
 
+    device = cfg["train"]["device"]
+
     tr = transforms.Compose([
         transforms.Resize(tuple(cfg["data"]["resize"])),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5], std=[0.5]),
     ])
 
+    # Carico dataset
     ds_tr = ECGImageDataset(cfg["data"]["train_csv"], transform=tr)
-    ds_va = ECGImageDataset(cfg["data"]["val_csv"],   transform=tr)
-    num_classes = len(ds_tr.classes)
+    ds_va = ECGImageDataset(cfg["data"]["val_csv"], transform=tr)
 
-    model = make_model(cfg["model"]["name"], num_classes).to(cfg["train"]["device"])
+    num_classes = len(ds_tr.classes)
+    meta_dim = len(ds_tr.meta_cols) if ds_tr.meta_cols else 0
+
+    # Creo modello
+    model = make_model(cfg["model"]["name"], num_classes, meta_dim).to(device)
+
     opt = torch.optim.AdamW(model.parameters(), lr=cfg["train"]["lr"])
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg["train"]["epochs"])
     criterion = nn.CrossEntropyLoss()
 
-    dl_tr = DataLoader(ds_tr, batch_size=cfg["train"]["bs"], shuffle=True, num_workers=4)
-    dl_va = DataLoader(ds_va, batch_size=cfg["train"]["bs"], shuffle=False, num_workers=4)
+    dl_tr = DataLoader(ds_tr, batch_size=cfg["train"]["bs"], shuffle=True, num_workers=2)
+    dl_va = DataLoader(ds_va, batch_size=cfg["train"]["bs"], shuffle=False, num_workers=2)
 
     best = 0.0
     for epoch in range(cfg["train"]["epochs"]):
         model.train()
         for b in tqdm(dl_tr, desc=f"epoch {epoch}"):
-            x = b["image"].to(cfg["train"]["device"])
-            y = b["label"].to(cfg["train"]["device"])
+            x = b["image"].to(device)
+            y = b["label"].to(device)
+            if meta_dim > 0:
+                meta = b["meta"].to(device)
+                logits = model(x, meta)
+            else:
+                logits = model(x)
             opt.zero_grad()
-            logits = model(x)
             loss = criterion(logits, y)
-            loss.backward(); opt.step()
+            loss.backward()
+            opt.step()
         sched.step()
 
-        # val
-        model.eval(); correct=0; total=0
+        # Valutazione
+        model.eval()
+        correct = 0
+        total = 0
         with torch.no_grad():
             for b in dl_va:
-                x = b["image"].to(cfg["train"]["device"])
-                y = b["label"].to(cfg["train"]["device"])
-                pred = model(x).argmax(1)
-                total += y.size(0); correct += (pred==y).sum().item()
-        acc = correct/total
-        if acc>best:
+                x = b["image"].to(device)
+                y = b["label"].to(device)
+                if meta_dim > 0:
+                    meta = b["meta"].to(device)
+                    pred = model(x, meta).argmax(1)
+                else:
+                    pred = model(x).argmax(1)
+                total += y.size(0)
+                correct += (pred == y).sum().item()
+        acc = correct / total
+        if acc > best:
             best = acc
             Path(cfg["train"]["out_dir"]).mkdir(parents=True, exist_ok=True)
-            torch.save(model.state_dict(), Path(cfg["train"]["out_dir"])/"baseline_best.pt")
-        print("val_acc=", acc)
+            torch.save(model.state_dict(), Path(cfg["train"]["out_dir"]) / "baseline_best.pt")
+        print(f"Epoch {epoch}: val_acc = {acc:.4f}")
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

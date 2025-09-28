@@ -1,0 +1,11 @@
+/* webapp/static/css/style.css */
+body { background: #f7f9fb; color: #1f2937; }
+.sidebar { height: 100vh; border-right: 1px solid #e6e9ee; }
+.log-box { background: #0f1724; color: #e6eef8; padding: 1rem; border-radius: 6px; max-height: 420px; overflow:auto; }
+h2 { color: #111827; margin-bottom: 1rem; }
+img { border: 1px solid #eee; }
+
+#loader p {
+  color: #374151;
+  font-weight: 500;
+}

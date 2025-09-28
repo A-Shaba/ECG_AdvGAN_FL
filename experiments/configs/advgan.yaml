@@ -1,16 +1,29 @@
 data:
   resize: [64,256]
   train_csv: data/processed/train.csv
+
 model:
-  name: small_cnn
+  name: small_cnn       # options: small_cnn, resnet18, deep_cnn
   ckpt: outputs/baseline/baseline_best.pt
+
 attack:
-  eps: 0.03
-  lambda_adv: 1.0
+  advgan:
+    eps: 0.03
+    lambda_adv: 1.0
+    lambda_gan: 0.1
+    lambda_pert: 0.05
+    attack_loss_type: "cw"   # "cw" or "ce"
+    kappa: 0.0
+    targeted: false
+    target_class: null
+    model_ckpt: outputs/advgan/generator.pt
+
 train:
   bs: 32
-  epochs: 3
-  g_lr: 1e-4
-  d_lr: 1e-4
-  out_g: outputs/advgan/G.pt
-  out_d: outputs/advgan/D.pt
+  device: cuda
+  epochs: 15
+  g_lr: 0.0001
+  d_lr: 0.0001
+  g_steps: 1
+  d_steps: 1
+  out_dir: outputs/advgan

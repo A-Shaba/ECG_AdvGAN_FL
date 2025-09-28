@@ -1,0 +1,39 @@
+seed: 42
+data:
+  resize: [64, 256]
+  train_csv: data/processed/train.csv
+  val_csv: data/processed/val.csv
+  test_csv: data/processed/test.csv
+  label_col: label
+
+model:
+  name: small_cnn # model small_cnn or resnet18 or deep_cn
+  ckpt: outputs/baseline/baseline_best.pt   # baseline classifier checkpoint
+
+train:
+  device: cuda
+
+fl:
+  client_csvs:           # list of CSVs (one per client)
+    - outputs/federated/client_1.csv
+    - outputs/federated/client_2.csv
+    - outputs/federated/client_3.csv
+  client_bs: 8
+  client_lr: 0.001
+  local_epochs: 2
+  rounds: 5
+  eval_bs: 4
+  num_workers: 2
+  malicious_index: 1
+  poison_frac: 0.5
+  out_dir: outputs/federated
+
+
+attack:
+  advgan:
+    eps: 0.3
+    model_ckpt: outputs/advgan/generator.pt
+
+
+
+  test_csv: data/processed/test.csv

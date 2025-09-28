@@ -1,0 +1,51 @@
+<!-- webapp/templates/base.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ECG AdvGAN FL Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <nav class="navbar navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">ECG AdvGAN · Federated</a>
+        <span class="navbar-text text-muted">Local experiment dashboard</span>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <aside class="col-md-2 bg-light sidebar">
+          <ul class="nav flex-column p-3">
+            <li class="nav-item"><a class="nav-link" href="/">Orchestrator</a></li>
+            <li class="nav-item"><a class="nav-link" href="/logs">📊 Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="/dataset">Dataset</a></li>
+            <li class="nav-item"><a class="nav-link" href="/training">Training</a></li>
+            <li class="nav-item"><a class="nav-link" href="/attacks">Attacks</a></li>
+            <li class="nav-item"><a class="nav-link" href="/federated">Federated</a></li>
+          </ul>
+        </aside>
+        <main class="col-md-10 p-4">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, msg in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                  {{ msg }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+          {% block content %}{% endblock %}
+        </main>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </body>
+</html>

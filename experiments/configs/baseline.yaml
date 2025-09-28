@@ -5,11 +5,11 @@ data:
   val_csv:   data/processed/val.csv
   test_csv:  data/processed/test.csv
 model:
-  name: small_cnn
+  name: small_cnn       # options: small_cnn, resnet18, deep_cnn
 train:
   device: cuda              # 'cuda' if you have GPU, else 'cpu'
-  bs: 64
-  lr: 1e-3
+  bs: 4
+  lr: 0.001
   epochs: 5
   out_dir: outputs/baseline
 attack:
@@ -17,7 +17,7 @@ attack:
     fgsm_eps: 0.03
     pgd_eps: 0.03
     pgd_alpha: 0.005
-    pgd_steps: 40
+    pgd_steps: 20
     advgan:
-      model_ckpt: outputs/advgan/advgan_generator.pt
+      model_ckpt: outputs/advgan/generator.pt
       eps: 0.03

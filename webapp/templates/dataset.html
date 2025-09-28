@@ -1,0 +1,25 @@
+<!-- webapp/templates/dataset.html -->
+{% extends "base.html" %}
+{% block content %}
+<h2>Dataset</h2>
+{% if stats.error %}
+  <div class="alert alert-warning">{{ stats.error }}</div>
+{% else %}
+  <p><strong>Samples:</strong> {{ stats.n_samples }}</p>
+  {% if stats.class_counts %}
+    <p><strong>Class counts:</strong></p>
+    <ul>
+      {% for k,v in stats.class_counts.items() %}
+      <li>{{ k }} : {{ v }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  <div class="row">
+    {% for p in plots %}
+    <div class="col-md-4">
+      <img src="{{ url_for('plots', filename=p) }}" class="img-fluid rounded shadow-sm mb-2">
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

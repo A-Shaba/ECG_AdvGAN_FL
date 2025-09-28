@@ -1,0 +1,18 @@
+<!-- webapp/templates/federated.html -->
+{% extends "base.html" %}
+{% block content %}
+<h2>Federated Learning</h2>
+{% if stats.note %}
+  <div class="alert alert-info">{{ stats.note }}</div>
+{% else %}
+  <h5>Round accuracies</h5>
+  <pre class="log-box">{{ stats }}</pre>
+  <div class="row mt-3">
+    {% for p in plots %}
+    <div class="col-md-6">
+      <img src="{{ url_for('plots', filename=p) }}" class="img-fluid rounded shadow-sm mb-2">
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}
